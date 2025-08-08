@@ -1,0 +1,463 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>MOZZA — мини‑соцсеть</title>
+  <style>
+    :root{--bg:#0f1115;--card:#171a21;--muted:#8b91a1;--fore:#e8ecf1;--accent:#6aa0ff;--danger:#ff6a6a}
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--fore);font:15px/1.45 system-ui, -apple-system, Segoe UI, Roboto, sans-serif}
+    a{color:var(--accent);text-decoration:none}
+    .wrap{max-width:1100px;margin:0 auto;padding:20px}
+    header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+    header h1{font-size:20px;margin:0}
+    .card{background:var(--card);border:1px solid #232837;border-radius:12px;padding:14px}
+    .grid{display:grid;gap:16px}
+    @media(min-width:980px){.grid{grid-template-columns:1.2fr 1fr}}
+    input,textarea,button,select{font:inherit}
+    input,textarea{width:100%;padding:10px;border-radius:10px;border:1px solid #2a3142;background:#11151d;color:var(--fore)}
+    textarea{min-height:90px;resize:vertical}
+    button{padding:10px 14px;border-radius:10px;border:1px solid #2a3142;background:#11151d;color:var(--fore);cursor:pointer}
+    button.primary{background:var(--accent);border-color:var(--accent);color:#0b1224}
+    button.ghost{background:transparent;border-color:#2a3142}
+    small{color:var(--muted)}
+    .row{display:flex;gap:10px;align-items:center}
+    .space{height:8px}
+    .list{display:flex;flex-direction:column;gap:10px;max-height:60vh;overflow:auto}
+    .post .meta,.msg .meta{color:var(--muted);font-size:12px}
+    .post .text{white-space:pre-wrap}
+    .post .actions{display:flex;gap:8px;margin-top:6px}
+    .rightcol .panel{margin-bottom:16px}
+    .chat-list .item{display:flex;justify-content:space-between;gap:8px;padding:10px;border:1px solid #2a3142;border-radius:10px;cursor:pointer}
+    .chat-list .item.active{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+    .messages{display:flex;flex-direction:column;gap:8px;max-height:45vh;overflow:auto}
+    .msg{border:1px solid #2a3142;border-radius:10px;padding:10px}
+    .msg.mine{border-color:#355fff;background:#0e1530}
+    .muted{color:var(--muted)}
+    .danger{color:var(--danger)}
+    .split{display:flex;gap:8px}
+    .split>*{flex:1}
+    .center{display:flex;justify-content:center;align-items:center;gap:8px}
+    .hidden{display:none !important}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>MOZZA</h1>
+      <div id="userBox" class="row hidden">
+        <span id="hello" class="muted"></span>
+        <button id="signOutBtn" class="ghost">Выйти</button>
+      </div>
+    </header>
+
+    <!-- Блок авторизации -->
+    <section id="auth" class="grid">
+      <div class="card">
+        <h3>Вход</h3>
+        <div class="space"></div>
+        <label>Email</label>
+        <input id="loginEmail" type="email" placeholder="you@example.com" />
+        <div class="space"></div>
+        <label>Пароль</label>
+        <input id="loginPass" type="password" placeholder="Пароль" />
+        <div class="space"></div>
+        <button id="loginBtn" class="primary">Войти</button>
+        <div class="space"></div>
+        <small class="muted">Нет аккаунта? Зарегистрируйся справа</small>
+      </div>
+
+      <div class="card">
+        <h3>Регистрация</h3>
+        <div class="space"></div>
+        <label>Как тебя называть (ник)</label>
+        <input id="regName" type="text" maxlength="40" placeholder="Самир" />
+        <div class="space"></div>
+        <label>Email</label>
+        <input id="regEmail" type="email" placeholder="you@example.com" />
+        <div class="space"></div>
+        <label>Пароль</label>
+        <input id="regPass" type="password" placeholder="Минимум 6 символов" />
+        <div class="space"></div>
+        <button id="regBtn" class="primary">Зарегистрироваться</button>
+      </div>
+    </section>
+
+    <!-- Основное приложение -->
+    <section id="app" class="grid hidden">
+      <!-- Левая колонка: Лента -->
+      <div class="leftcol">
+        <div class="card">
+          <h3>Новый пост</h3>
+          <textarea id="postText" maxlength="280" placeholder="О чем думаешь? (до 280 символов)"></textarea>
+          <div class="row" style="justify-content:space-between;margin-top:8px;">
+            <small id="count">0/280</small>
+            <button id="publishBtn" class="primary">Опубликовать</button>
+          </div>
+        </div>
+
+        <div class="space"></div>
+
+        <div class="card">
+          <h3>Лента</h3>
+          <div id="feed" class="list"></div>
+        </div>
+      </div>
+
+      <!-- Правая колонка: Чаты -->
+      <div class="rightcol">
+        <div class="card panel">
+          <h3>Новый чат</h3>
+          <small class="muted">Введи email друга (должен быть зарегистрирован)</small>
+          <div class="space"></div>
+          <div class="split">
+            <input id="friendEmail" type="email" placeholder="friend@example.com" />
+            <button id="startChatBtn" class="primary">Начать</button>
+          </div>
+        </div>
+
+        <div class="card panel">
+          <h3>Мои чаты</h3>
+          <div id="chatList" class="chat-list list"></div>
+        </div>
+
+        <div class="card panel">
+          <h3 id="chatTitle" class="muted">Чат не выбран</h3>
+          <div id="messages" class="messages"></div>
+          <div class="space"></div>
+          <div class="row">
+            <input id="msgInput" type="text" placeholder="Напиши сообщение..." />
+            <button id="sendMsgBtn" class="primary">Отправить</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script type="module">
+    // Firebase SDK
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import {
+      getAuth, onAuthStateChanged, signInWithEmailAndPassword,
+      createUserWithEmailAndPassword, updateProfile, signOut
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import {
+      getFirestore, collection, addDoc, serverTimestamp, query, orderBy,
+      onSnapshot, deleteDoc, doc, getDoc, setDoc, where, getDocs, limit
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    // ВСТАВЬ СВОИ КЛЮЧИ ИЗ FIREBASE CONSOLE
+    const firebaseConfig = {
+      apiKey: "AIzaSyCZ7XQ8_Z1g0LYNOeTK3rXO2KpkHQtfdMg",
+      authDomain: "mozza-15451.firebaseapp.com",
+      projectId: "mozza-15451",
+      storageBucket: "mozza-15451.appspot.com",
+      messagingSenderId: "264927724171",
+      appId: "1:264927724171:web:f958ef05eadb15026b0a8e"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // UI элементы
+    const authSection = document.getElementById('auth');
+    const appSection = document.getElementById('app');
+    const userBox = document.getElementById('userBox');
+    const hello = document.getElementById('hello');
+    const signOutBtn = document.getElementById('signOutBtn');
+
+    const loginEmail = document.getElementById('loginEmail');
+    const loginPass = document.getElementById('loginPass');
+    const loginBtn = document.getElementById('loginBtn');
+
+    const regName = document.getElementById('regName');
+    const regEmail = document.getElementById('regEmail');
+    const regPass = document.getElementById('regPass');
+    const regBtn = document.getElementById('regBtn');
+
+    const postText = document.getElementById('postText');
+    const countEl = document.getElementById('count');
+    const publishBtn = document.getElementById('publishBtn');
+    const feedEl = document.getElementById('feed');
+
+    const friendEmail = document.getElementById('friendEmail');
+    const startChatBtn = document.getElementById('startChatBtn');
+    const chatListEl = document.getElementById('chatList');
+    const chatTitle = document.getElementById('chatTitle');
+    const messagesEl = document.getElementById('messages');
+    const msgInput = document.getElementById('msgInput');
+    const sendMsgBtn = document.getElementById('sendMsgBtn');
+
+    let feedUnsub = null;
+    let chatsUnsub = null;
+    let msgsUnsub = null;
+    let currentChatId = null;
+    let currentUserProfile = null;
+
+    // Helpers
+    function escapeHtml(str) {
+      return str.replace(/[&<>"']/g, (m) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+    }
+    function fmtTime(ts) {
+      const d = ts?.toDate ? ts.toDate() : new Date();
+      return d.toLocaleString();
+    }
+    function byId(id){return document.getElementById(id)}
+
+    // Профиль в коллекции users
+    async function ensureUserProfile(user, displayNameIfNew) {
+      const ref = doc(db, 'users', user.uid);
+      const snap = await getDoc(ref);
+      if (!snap.exists()) {
+        const name = displayNameIfNew || user.displayName || 'Безымянный';
+        await setDoc(ref, {
+          email: user.email || '',
+          displayName: name,
+          createdAt: serverTimestamp()
+        });
+        if (!user.displayName && name) {
+          try { await updateProfile(user, { displayName: name }); } catch {}
+        }
+        return { email: user.email, displayName: name, uid: user.uid };
+      } else {
+        return { uid: user.uid, ...snap.data() };
+      }
+    }
+
+    // Подписка на ленту
+    function subscribeFeed() {
+      if (feedUnsub) feedUnsub();
+      const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'));
+      feedUnsub = onSnapshot(q, (snap) => {
+        feedEl.innerHTML = '';
+        snap.forEach(docSnap => {
+          const p = docSnap.data();
+          const div = document.createElement('div');
+          div.className = 'card post';
+          div.innerHTML = `
+            <div class="text">${escapeHtml(p.text || '')}</div>
+            <div class="meta">
+              <span>${escapeHtml(p.authorName || 'Неизвестный')}</span>
+              <span>·</span>
+              <span>${fmtTime(p.createdAt)}</span>
+            </div>
+            <div class="actions">
+              ${p.uid === auth.currentUser?.uid ? `<button class="ghost danger" data-id="${docSnap.id}">Удалить</button>` : ''}
+            </div>
+          `;
+          const btn = div.querySelector('button');
+          if (btn) {
+            btn.addEventListener('click', async () => {
+              await deleteDoc(doc(db, 'posts', docSnap.id));
+            });
+          }
+          feedEl.appendChild(div);
+        });
+      });
+    }
+
+    // Публикация поста
+    publishBtn.addEventListener('click', async () => {
+      const text = postText.value.trim();
+      if (!text || text.length > 280) return;
+      publishBtn.disabled = true;
+      try {
+        const name = currentUserProfile?.displayName || auth.currentUser?.displayName || 'Безымянный';
+        await addDoc(collection(db, 'posts'), {
+          text,
+          createdAt: serverTimestamp(),
+          uid: auth.currentUser.uid,
+          authorName: name
+        });
+        postText.value = '';
+        countEl.textContent = '0/280';
+      } catch (e) {
+        alert('Ошибка публикации');
+        console.error(e);
+      } finally { publishBtn.disabled = false; }
+    });
+
+    postText.addEventListener('input', () => {
+      countEl.textContent = `${postText.value.length}/280`;
+    });
+
+    // Получить (или создать) чат с другом по его uid
+    async function getOrCreateChatWith(friendUid) {
+      const me = auth.currentUser.uid;
+      // Ищем среди моих чатов
+      const myChatsQ = query(collection(db, 'chats'), where('participants', 'array-contains', me));
+      const myChatsSnap = await getDocs(myChatsQ);
+      let existing = null;
+      myChatsSnap.forEach(d => {
+        const arr = d.data().participants || [];
+        if (arr.includes(friendUid)) existing = { id: d.id, ...d.data() };
+      });
+      if (existing) return existing.id;
+      // Создаем новый чат
+      const docRef = await addDoc(collection(db, 'chats'), {
+        participants: [me, friendUid],
+        createdAt: serverTimestamp()
+      });
+      return docRef.id;
+    }
+
+    // Подписка на список чатов
+    function subscribeChats() {
+      if (chatsUnsub) chatsUnsub();
+      const me = auth.currentUser.uid;
+      const q = query(collection(db, 'chats'), where('participants', 'array-contains', me), orderBy('createdAt', 'desc'));
+      chatsUnsub = onSnapshot(q, async (snap) => {
+        chatListEl.innerHTML = '';
+        const items = [];
+        for (const docSnap of snap.docs) {
+          const chat = { id: docSnap.id, ...docSnap.data() };
+          const otherUid = (chat.participants || []).find(u => u !== me);
+          let otherName = 'Друг';
+          let otherEmail = '';
+          if (otherUid) {
+            const uref = doc(db, 'users', otherUid);
+            const usnap = await getDoc(uref);
+            if (usnap.exists()) {
+              otherName = usnap.data().displayName || otherName;
+              otherEmail = usnap.data().email || '';
+            }
+          }
+          items.push({ id: chat.id, otherUid, otherName, otherEmail });
+        }
+        // Рендер
+        items.forEach(item => {
+          const div = document.createElement('div');
+          div.className = 'item';
+          if (item.id === currentChatId) div.classList.add('active');
+          div.innerHTML = `
+            <div>
+              <div><strong>${escapeHtml(item.otherName)}</strong></div>
+              <div class="muted">${escapeHtml(item.otherEmail)}</div>
+            </div>
+          `;
+          div.addEventListener('click', () => openChat(item.id, item.otherName));
+          chatListEl.appendChild(div);
+        });
+      });
+    }
+
+    // Открыть чат
+    function openChat(chatId, title='Чат') {
+      currentChatId = chatId;
+      chatTitle.textContent = title;
+      messagesEl.innerHTML = '';
+      if (msgsUnsub) msgsUnsub();
+      const q = query(collection(db, 'chats', chatId, 'messages'), orderBy('createdAt', 'asc'));
+      msgsUnsub = onSnapshot(q, (snap) => {
+        messagesEl.innerHTML = '';
+        snap.forEach(docSnap => {
+          const m = docSnap.data();
+          const div = document.createElement('div');
+          div.className = 'msg ' + (m.uid === auth.currentUser.uid ? 'mine' : '');
+          div.innerHTML = `
+            <div class="meta">${fmtTime(m.createdAt)}</div>
+            <div>${escapeHtml(m.text || '')}</div>
+          `;
+          messagesEl.appendChild(div);
+        });
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+      });
+    }
+
+    // Отправка сообщения
+    sendMsgBtn.addEventListener('click', async () => {
+      const text = msgInput.value.trim();
+      if (!currentChatId) { alert('Выбери или создай чат'); return; }
+      if (!text) return;
+      sendMsgBtn.disabled = true;
+      try {
+        await addDoc(collection(db, 'chats', currentChatId, 'messages'), {
+          uid: auth.currentUser.uid,
+          text,
+          createdAt: serverTimestamp()
+        });
+        msgInput.value = '';
+      } catch(e) {
+        alert('Не удалось отправить');
+        console.error(e);
+      } finally { sendMsgBtn.disabled = false; }
+    });
+
+    // Старт чата по email друга
+    startChatBtn.addEventListener('click', async () => {
+      const email = friendEmail.value.trim().toLowerCase();
+      if (!email) return;
+      try {
+        // Находим друга в коллекции users
+        const q = query(collection(db, 'users'), where('email', '==', email), limit(1));
+        const snap = await getDocs(q);
+        if (snap.empty) { alert('Пользователь не найден. Пусть зарегистрируется в MOZZA.'); return; }
+        const friendDoc = snap.docs[0];
+        const friendUid = friendDoc.id;
+        if (friendUid === auth.currentUser.uid) { alert('Это ты :)'); return; }
+        const chatId = await getOrCreateChatWith(friendUid);
+        const friendName = friendDoc.data().displayName || 'Друг';
+        openChat(chatId, friendName);
+        friendEmail.value = '';
+      } catch (e) {
+        console.error(e);
+        alert('Ошибка создания чата');
+      }
+    });
+
+    // Аутентификация
+    loginBtn.addEventListener('click', async () => {
+      try {
+        await signInWithEmailAndPassword(auth, loginEmail.value.trim(), loginPass.value);
+      } catch (e) {
+        console.error(e);
+        alert('Ошибка входа');
+      }
+    });
+
+    regBtn.addEventListener('click', async () => {
+      try {
+        const name = regName.value.trim();
+        if (!name) { alert('Укажи ник'); return; }
+        const { user } = await createUserWithEmailAndPassword(auth, regEmail.value.trim().toLowerCase(), regPass.value);
+        await updateProfile(user, { displayName: name }).catch(()=>{});
+        currentUserProfile = await ensureUserProfile(user, name);
+      } catch (e) {
+        console.error(e);
+        alert('Ошибка регистрации');
+      }
+    });
+
+    signOutBtn.addEventListener('click', async () => {
+      await signOut(auth);
+    });
+
+    // Реакция на вход/выход
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        // Показать форму входа
+        authSection.classList.remove('hidden');
+        appSection.classList.add('hidden');
+        userBox.classList.add('hidden');
+        // Отписаться от слушателей
+        if (feedUnsub) feedUnsub();
+        if (chatsUnsub) chatsUnsub();
+        if (msgsUnsub) msgsUnsub();
+        currentChatId = null;
+        return;
+      }
+      // Профиль
+      currentUserProfile = await ensureUserProfile(user);
+      hello.textContent = `Привет, ${currentUserProfile.displayName}!`;
+      authSection.classList.add('hidden');
+      appSection.classList.remove('hidden');
+      userBox.classList.remove('hidden');
+      // Подписки
+      subscribeFeed();
+      subscribeChats();
+    });
+  </script>
+</body>
+</html>
